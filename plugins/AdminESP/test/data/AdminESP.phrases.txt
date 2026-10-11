@@ -1,0 +1,28 @@
+"Phrases"
+{
+	"esp_enabled"
+	{
+		"ru"	" {GREEN}[ESP]{DEFAULT} Вы успешно {GREEN}включили{DEFAULT} ESP"
+		"en"	" {GREEN}[ESP]{DEFAULT} ESP {GREEN}enabled"
+	}
+	"esp_disabled"
+	{
+		"ru"	" {RED}[ESP]{DEFAULT} Вы успешно {RED}выключили{DEFAULT} ESP"
+		"en"	" {RED}[ESP]{DEFAULT} ESP {RED}disabled"
+	}
+	"esp_menu_on"
+	{
+		"ru"	"ESP [вкл]"
+		"en"	"ESP [on]"
+	}
+	"esp_menu_off"
+	{
+		"ru"	"ESP [выкл]"
+		"en"	"ESP [off]"
+	}
+	"esp_no_access"
+	{
+		"ru"	" {RED}[ESP]{DEFAULT} Нет доступа к ESP на этом сервере"
+		"en"	" {RED}[ESP]{DEFAULT} You have no ESP access on this server"
+	}
+}
