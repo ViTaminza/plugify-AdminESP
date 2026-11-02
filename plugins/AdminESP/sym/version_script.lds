@@ -9,11 +9,6 @@
            plugify module from the admin_system plugin's exported methods) */
         __admin_system_*;
 
-        /* hudmenu binding slots (defined by hudmenu_bindings, filled by the plugify module from
-           the hudmenu plugin's exported GetClientMenuType/SetClientMenuType); pisexcompat links
-           them into every consumer, so they are exported here as well */
-        __hudmenu_*;
-
         /* No exported methods: AdminESP exposes nothing to other plugins. */
 
     local: *;

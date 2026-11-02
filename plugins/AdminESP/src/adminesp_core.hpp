@@ -1,20 +1,30 @@
-// AdminESP — engine-free core: adminesp.ini settings, the access decision and the outline
-// colours.
+// AdminESP — engine-free core: adminesp.ini settings, the access decision, the outline colours
+// and the plugin-local replacements for the pieces pisexcompat used to provide (KV1 reader,
+// cs2-menus colour tags, phrase resolution and the phrase language chain).
 //
-// The original Metamod plugin kept five settings in one struct, parsed the two colour
-// strings by hand and decided per slot between "no access", "only while dead or spectating" and
-// "always" from two permission checks against the admin system. All of that is pure logic, so it
-// lives here and test/adminesp_core_tests.cpp drives it against the production adminesp.ini.
+// The original Metamod plugin kept five settings in one struct, parsed the two colour strings by
+// hand and decided per slot between "no access", "only while dead or spectating" and "always"
+// from two permission checks against the admin system. All of that is pure logic, so it lives
+// here and test/adminesp_core_tests.cpp drives it against the production adminesp.ini and
+// AdminESP.phrases.txt.
+//
+// Pure s2sdk, no pisexcompat (docs/PLUGIN_STANDARD.md §7). The production files keep their
+// Metamod/KeyValues format: ParseKv1() in src/kv1.hpp is the local reader, ResolvePhrases() is the
+// language -> "en" -> any-language fallback pisexcompat's LoadPhrasesFile performed, and
+// PickLanguage() is the <configs>/core.cfg "ServerLang" -> s2sdk ServerLanguage -> "en" chain
+// (the file/s2sdk I/O itself is in src/plugin.cpp).
 //
 // Access precedence stays exactly as the original: admin_flag_all wins over admin_flag_death, and
 // an empty flag never grants anything.
 
 #pragma once
 
-#include <pisex/keyvalues.hpp>
+#include "kv1.hpp"
 
 #include <cstdint>
+#include <map>
 #include <string>
+#include <string_view>
 
 namespace adminesp {
 
@@ -67,9 +77,11 @@ struct Settings {
 // "#rrggbb" or "r g b" / "r,g,b". Returns false (and leaves `out` untouched) on anything else.
 bool ParseColor(const char* text, Color& out);
 
-// Reads every key with the original's defaults; missing/invalid colours keep the defaults, an
-// empty flag stays empty (nobody gets access).
-Settings ParseSettings(pisex::KeyValues& root);
+// Reads every key with the original's defaults from the parsed adminesp.ini. `root` is the node
+// ParseKv1() returned (the flattened "Config" block); a file without that block is accepted too,
+// exactly like KeyValues::GetString looked at the loaded root. Missing/invalid colours keep the
+// defaults, an empty flag stays empty (nobody gets access).
+Settings ParseSettings(const KvNode& root);
 
 // The permission precedence of the original RefreshAccess().
 Access PickAccess(bool hasAlwaysFlag, bool hasDeadOnlyFlag);
@@ -79,5 +91,31 @@ Access PickAccess(bool hasAlwaysFlag, bool hasDeadOnlyFlag);
 bool CanSeeNow(Access access, bool alive, int team);
 
 const char* AccessName(Access access);
+
+// --- pisexcompat's local replacements -----------------------------------------------------------
+
+// The cs2-menus colour tags the production phrase files carry ({DEFAULT} {RED} {GREEN} ...,
+// "\\n"): replaced with exactly the chat control bytes the Metamod servers sent, byte for byte
+// the table pisexcompat carried (cs2-menus utils.h colors_text[]/colors_hex[]). The last entry is
+// the chat line break, which the CS2 chat renderer shows as U+2029.
+std::string Colorize(std::string_view text);
+
+// Source language name ("russian", "english", ...) or code -> the code the phrase files use
+// ("ru", "en", ...). Unknown names are returned unchanged (pisexcompat's NormalizeLanguage).
+std::string NormalizeLanguage(std::string_view name);
+
+// The language a phrase table is resolved for: <configs>/core.cfg "ServerLang" first, then
+// s2sdk's ServerLanguage, then "en". Both inputs are normalized; an empty core value falls
+// through, an empty server value becomes "en".
+std::string PickLanguage(std::string_view coreLanguage, std::string_view serverLanguage);
+
+using PhraseMap = std::map<std::string, std::string>;
+
+// A parsed phrases file ("Key" { "ru" "..." "en" "..." }): every block child resolved for
+// `language`, then for "en", then for the first language that has a non-empty text. Plain values
+// next to the blocks are not phrases and are skipped. The original had the same fallback chain
+// (pisexcompat's LoadPhrasesFile); a key with no text at all stays empty and Phrase() prints the
+// key itself.
+PhraseMap ResolvePhrases(const KvNode& root, std::string_view language);
 
 } // namespace adminesp
